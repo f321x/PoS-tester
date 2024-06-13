@@ -172,7 +172,7 @@ std::string LnurlPoS::makeLNURL(int total)
 		throw std::invalid_argument("LnurlPoS: not initialized");
 	}
 	int randomPin = rand() % 9000 + 1000;
-	unsigned char nonce[8];
+	uint8_t nonce[8];
 	for (int i = 0; i < 8; i++)
 	{
 		nonce[i] = rand() % 256;
@@ -187,12 +187,12 @@ std::string LnurlPoS::makeLNURL(int total)
 	preparedURL.copy(Buf, preparedURL.size() + 1);
 	Buf[preparedURL.size()] = '\0';
 	char *url = Buf;
-	unsigned char *data = (unsigned char *)calloc(strlen(url) * 2, sizeof(unsigned char));
+	uint8_t *data = (unsigned char *)calloc(strlen(url) * 2, sizeof(unsigned char));
 	if (!data)
 		return (std::string(""));
 	size_t len = 0;
 	int res = convert_bits(data, &len, 5, (unsigned char *)url, strlen(url), 8, 1);
-	char *charLnurl = (char *)calloc(strlen(url) * 2, sizeof(unsigned char));
+	char *charLnurl = (char *)calloc(strlen(url) * 2, sizeof(char));
 	if (!charLnurl)
 	{
 		free(data);

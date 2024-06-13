@@ -1,4 +1,4 @@
-TARGET ?= main
+TARGET ?= postester
 
 ifeq ($(OS),Windows_NT)
 EXT ?= .exe
