@@ -27,21 +27,21 @@ LnurlPoS &LnurlPoS::operator=(const LnurlPoS &other)
 	return *this;
 }
 
-void LnurlPoS::init(const String &lnurl_device_string, const bool debug_mode)
+void LnurlPoS::init(const std::string &lnurl_device_string, const bool debug_mode)
 {
 	_debugMode = debug_mode;
 	if (_debugMode)
-		Serial.println("LnurlPoS created");
+		std::cout << "LnurlPoS created" << std::endl;
 	if (lnurl_device_string == "https://legend.lnbits.com/lnurldevice/api/v1/lnurl/idexample,keyexample,EUR" && _debugMode)
 	{
-		Serial.println("LnurlPoS: WARNING: using default lnurl_device_string");
+		std::cout << "LnurlPoS: WARNING: using default lnurl_device_string" << std::endl;
 	}
 	if (lnurl_device_string.length() == 0)
 	{
 		throw std::invalid_argument("LnurlPoS: lnurl_device_string must be non-empty");
 	}
 	_baseURL = _getValue(lnurl_device_string, ',', 0);
-	String secretATMbuf = _getValue(lnurl_device_string, ',', 1);
+	std::string secretATMbuf = _getValue(lnurl_device_string, ',', 1);
 	_currencyATM = _getValue(lnurl_device_string, ',', 2);
 
 	_secretLength = secretATMbuf.length();
@@ -54,46 +54,46 @@ void LnurlPoS::init(const String &lnurl_device_string, const bool debug_mode)
 }
 
 // Function to seperate the LNURLDevice string in key, url and currency
-String LnurlPoS::_getValue(const String &data, char separator, int index)
+std::string LnurlPoS::_getValue(const std::string &data, char separator, int index)
 {
 	int found = 0;
-	int strIndex[] = {0, -1};
+	std::pair<int, int> strIndex = {0, -1};
 	const int maxIndex = data.length() - 1;
 
 	for (int i = 0; i <= maxIndex && found <= index; i++)
 	{
-		if (data.charAt(i) == separator || i == maxIndex)
+		if (data.at(i) == separator || i == maxIndex)
 		{
 			found++;
-			strIndex[0] = strIndex[1] + 1;
-			strIndex[1] = (i == maxIndex) ? i + 1 : i;
+			strIndex.first = strIndex.second + 1;
+			strIndex.second = (i == maxIndex) ? i + 1 : i;
 		}
 	}
-	return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+	return found > index ? data.substr(strIndex.first, strIndex.second - strIndex.first) : "";
 }
 
-String LnurlPoS::getAmountString(int amount_in_cents)
+std::string LnurlPoS::getAmountString(int amount_in_cents)
 {
-	String euro;
-	String cents;
-	String return_value;
+	std::string euro;
+	std::string cents;
+	std::string return_value;
 	int euro_value;
 	int cent_remainder;
 
 	euro_value = amount_in_cents / 100;
 	cent_remainder = amount_in_cents % 100;
-	euro = String(euro_value);
+	euro = std::to_string(euro_value);
 	if (cent_remainder > 9)
-		cents = String(cent_remainder);
+		cents = std::to_string(cent_remainder);
 	else if (cent_remainder < 10)
-		cents = "0" + String(cent_remainder);
-	return_value = String(euro) + "." + String(cents) + " " + _currencyATM;
+		cents = "0" + std::to_string(cent_remainder);
+	return_value = std::string(euro) + "." + std::string(cents) + " " + _currencyATM;
 	if (_debugMode)
-		Serial.println("Calculated amount string: " + return_value);
+		std::cout << "Calculated amount string: " << return_value << std::endl;
 	return (return_value);
 }
 
-String LnurlPoS::getCurrency() const
+std::string LnurlPoS::getCurrency() const
 {
 	if (!_initialized)
 	{
@@ -165,42 +165,43 @@ void LnurlPoS::_to_upper(char *arr)
 	}
 }
 
-String LnurlPoS::makeLNURL(int total)
+std::string LnurlPoS::makeLNURL(int total)
 {
 	if (!_initialized)
 	{
 		throw std::invalid_argument("LnurlPoS: not initialized");
 	}
-	int randomPin = random(1000, 9999);
-	byte nonce[8];
+	int randomPin = rand() % 9000 + 1000;
+	unsigned char nonce[8];
 	for (int i = 0; i < 8; i++)
 	{
-		nonce[i] = random(256);
+		nonce[i] = rand() % 256;
 	}
-	byte payload[51]; // 51 bytes is max one can get with xor-encryption
+	unsigned char payload[51]; // 51 bytes is max one can get with xor-encryption
 	size_t payload_len = _xor_encrypt(payload, sizeof(payload), _secretATM, _secretLength, nonce, sizeof(nonce), randomPin, total);
-	String preparedURL = _baseURL + "?atm=1&p=";
+	std::string preparedURL = _baseURL + "?atm=1&p=";
 	preparedURL += toBase64(payload, payload_len, BASE64_URLSAFE | BASE64_NOPADDING);
 	if (_debugMode)
-		Serial.println(preparedURL);
+		std::cout << preparedURL << std::endl;
 	char Buf[200];
-	preparedURL.toCharArray(Buf, 200);
+	preparedURL.copy(Buf, preparedURL.size() + 1);
+	Buf[preparedURL.size()] = '\0';
 	char *url = Buf;
-	byte *data = (byte *)calloc(strlen(url) * 2, sizeof(byte));
+	unsigned char *data = (unsigned char *)calloc(strlen(url) * 2, sizeof(unsigned char));
 	if (!data)
-		return (String(""));
+		return (std::string(""));
 	size_t len = 0;
-	int res = convert_bits(data, &len, 5, (byte *)url, strlen(url), 8, 1);
-	char *charLnurl = (char *)calloc(strlen(url) * 2, sizeof(byte));
+	int res = convert_bits(data, &len, 5, (unsigned char *)url, strlen(url), 8, 1);
+	char *charLnurl = (char *)calloc(strlen(url) * 2, sizeof(unsigned char));
 	if (!charLnurl)
 	{
 		free(data);
-		return (String(""));
+		return (std::string(""));
 	}
 	bech32_encode(charLnurl, "lnurl", data, len);
 	_to_upper(charLnurl);
 	free(data);
-	String lnurl(charLnurl);
+	std::string lnurl(charLnurl);
 	free(charLnurl);
 	return (lnurl);
 }
