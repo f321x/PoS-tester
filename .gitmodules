@@ -1,0 +1,3 @@
+[submodule "libs/ubitcoin"]
+	path = libs/ubitcoin
+	url = https://github.com/micro-bitcoin/uBitcoin
